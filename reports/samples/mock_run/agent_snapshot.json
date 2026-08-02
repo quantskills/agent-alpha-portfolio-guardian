@@ -1,0 +1,26 @@
+{
+  "agent": "agent-alpha-portfolio-guardian",
+  "as_of_date": "2026-07-31",
+  "source_mode": "mock",
+  "data_source": "synthetic-mock",
+  "synthetic": true,
+  "data_version": "guardian-mock-v0.1+guardian-rules-v0.1",
+  "rules_version": "guardian-rules-v0.1",
+  "l1": "截至 2026-07-31（source_mode=mock），组合 3 个因子健康度守卫完成：keep=1，rebuild_candidate=1，watch=1。结论仅供研究参考。",
+  "n_factors": 3,
+  "n_candidates": 1,
+  "n_alerts": 1,
+  "gaps": [
+    "mock run"
+  ],
+  "paths": {
+    "health_matrix_csv": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\health_matrix.csv",
+    "health_matrix_parquet": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\health_matrix.parquet",
+    "retire_rebuild_csv": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\retire_rebuild_candidates.csv",
+    "crowding_alerts": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\crowding_alerts.json",
+    "ic_decay_curves": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\ic_decay_curves.json",
+    "ic_decay_png": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\charts\\ic_decay_family.png",
+    "runtime_report": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\runtime_report.md",
+    "handoff_card": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\handoff_card.md"
+  }
+}

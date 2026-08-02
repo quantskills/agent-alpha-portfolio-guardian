@@ -1,0 +1,50 @@
+name: agent-alpha-portfolio-guardian
+title: Alpha 多因子组合健康度守卫 Agent
+license: GPL-3.0-only
+requires:
+  - skill-factor-evaluate
+  - skill-factor-decay
+  - agent-crowding-risk-monitor
+  - skill-smart-money-profiler
+tags:
+  - quant
+  - factor
+  - portfolio
+  - guardian
+  - crowding
+  - smart-money
+  - pandadata
+  - agent
+metadata:
+  organization: QuantSkills
+  organization_url: https://github.com/quantskills
+  repository: agent-alpha-portfolio-guardian
+  project_type: agent
+  collection: factor-portfolio-guardian
+quantSkills:
+  project_type: agent
+  category: guardian
+  tags:
+    - quant
+    - factor
+    - portfolio
+    - guardian
+    - crowding
+    - smart-money
+    - pandadata
+    - agent
+  platforms:
+    - claude-code
+    - codex
+    - hermes
+    - openclaw
+    - cursor
+  status: draft
+  validation_level: runnable
+  maintainer_type: community
+  summary_zh: 多因子组合健康度守卫：健康度矩阵 + 拥挤警示 + 退休/重构候选 + IC 衰减曲线。
+  requires:
+    - skill-factor-evaluate
+    - skill-factor-decay
+    - agent-crowding-risk-monitor
+    - skill-smart-money-profiler
