@@ -5,7 +5,11 @@ description: 当需要对多因子组合做持续健康度守卫、产出健康�
 
 # Alpha 多因子组合健康度守卫 Agent
 
-本文是唯一行为入口。配置与读报告见 [用户使用手册.md](用户使用手册.md)；规则细节见 `references/decision-rules.md`。
+本文是完整行为与使用说明。QuantSkills Agent 声明与多运行时入口见根目录 [AGENTS.md](AGENTS.md)；仓库主页见 [README.md](README.md)。
+
+> 文件最上方仅保留 Agent 加载所需的两行元数据（`name` / `description`）。组织与许可证等完整元数据见 [AGENTS.md](AGENTS.md) 与 [agents/skill-manifest.yaml](agents/skill-manifest.yaml)。
+
+配置与读报告见 [用户使用手册.md](用户使用手册.md)；规则细节见 `references/decision-rules.md`。
 
 ## 定位边界
 
@@ -40,7 +44,7 @@ description: 当需要对多因子组合做持续健康度守卫、产出健康�
 | L1 | 一句话组合健康结论 | 文本 |
 | L2 | 健康度矩阵 + 候选清单 + 警示 | Markdown |
 | L3 | IC 衰减族图（PNG 或 ASCII） | charts/ |
-| L4 | 可选（未强制） | — |
+| L4 | 守卫有效性回测交互页（SCI 风格） | `reports/backtest/<run_id>/l4.html` |
 | L5 | 结构化四件套 | CSV/JSON/Parquet |
 
 研究态目录：`reports/runtime_out/<run_id>/`  
@@ -65,7 +69,8 @@ python -m runtime backtest --allow-simulate
 python -m runtime clean
 ```
 
-回测产物：`reports/backtest/<run_id>/`（分桶、准确率、MDD、滚动窗）。
+回测产物：`reports/backtest/<run_id>/`（分桶、准确率、MDD、滚动窗、`l4.html`）。  
+运行时入口汇总见 [AGENTS.md](AGENTS.md)（Claude Code / Codex / Cursor / Hermes / OpenClaw）。
 
 ### 对话触发话术
 

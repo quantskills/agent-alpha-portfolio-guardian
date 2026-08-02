@@ -5,8 +5,9 @@ description: >
   crowding-risk-monitor, and smart-money-profiler to produce a health matrix,
   crowding alerts, retire/rebuild candidates, and IC decay curves.
 instructions: |
-  Read SKILL.md first. Do not emit trade instructions. On dependency gaps, mark
+  Read AGENTS.md then SKILL.md. Do not emit trade instructions. On dependency gaps, mark
   insufficient and never fabricate metrics. Prefer python -m runtime for local runs.
-entry_point: SKILL.md
+  Research only; no return promises; no unofficial QuantSkills endorsement claims.
+entry_point: AGENTS.md
 runtime:
   local_command: python -m runtime --mock
