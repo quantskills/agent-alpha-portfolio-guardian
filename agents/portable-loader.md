@@ -9,7 +9,7 @@
    - `skill-factor-decay`
    - `agent-crowding-risk-monitor`
    - `skill-smart-money-profiler`
-2. 阅读 `<REPO_ROOT>/AGENTS.md` 与 `<REPO_ROOT>/SKILL.md`
+2. 阅读 `<REPO_ROOT>/AGENTS.md`
 3. `pip install -r <REPO_ROOT>/requirements.txt`
 4. 复制 `.env.example` → 环境变量（live 且需在线取数时填 `PANDA_DATA_*`；勿写入仓库）
 5. 运行：
@@ -26,7 +26,7 @@ python -m runtime backtest --allow-simulate
 
 ## 硬约束（必须注入宿主）
 
-- 先读 `AGENTS.md` / `SKILL.md`，再读依赖 Skill/Agent 文档
+- 先读 `AGENTS.md`，再读依赖 Skill/Agent 文档
 - 依赖失败必须标注缺口，禁止编造数值
 - 禁止买入 / 卖出 / 必涨 / 仓位指令
 - 输出仅供研究参考，不构成投资建议；不承诺收益

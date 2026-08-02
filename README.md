@@ -60,8 +60,7 @@ flowchart LR
 
 ```text
 agent-alpha-portfolio-guardian/
-├── AGENTS.md                 Agent 声明与多运行时入口（QuantSkills 必填）
-├── SKILL.md                  完整行为与使用说明
+├── AGENTS.md                 Agent 声明 + 行为入口（QuantSkills 必填）
 ├── README.md / README.en.md  仓库主页
 ├── LICENSE                   GPL-3.0-only
 ├── 用户使用手册.md            配置与读报告
@@ -103,11 +102,11 @@ python -m runtime clean
 
 ## 运行时兼容
 
-本仓库以 [`AGENTS.md`](AGENTS.md) 为 QuantSkills Agent 声明入口，详细行为见 [`SKILL.md`](SKILL.md)，可在 **Claude Code、Codex、Cursor、Hermes、OpenClaw** 等运行时中加载：
+本仓库以 [`AGENTS.md`](AGENTS.md) 为唯一 Agent 声明与行为入口，可在 **Claude Code、Codex、Cursor、Hermes、OpenClaw** 等运行时中加载：
 
 | 运行时 | 入口 |
 | --- | --- |
-| Claude Code / Codex | 加载本目录 + 四依赖 |
+| Claude Code / Codex | 加载本目录 `AGENTS.md` + 四依赖 |
 | Cursor | `.cursor/skills/agent-alpha-portfolio-guardian` + `agents/cursor-rule.mdc` |
 | Hermes / OpenClaw | `agents/portable-loader.md` |
 | OpenAI 兼容 | `agents/openai.yaml` |
@@ -132,8 +131,7 @@ python -m runtime clean
 
 ## 参考文档
 
-- [`AGENTS.md`](AGENTS.md) — 项目声明、场景、限制与元数据
-- [`SKILL.md`](SKILL.md) — 行为入口与工作流
+- [`AGENTS.md`](AGENTS.md) — 项目声明、行为入口、场景、限制与元数据
 - [`用户使用手册.md`](用户使用手册.md) — 配置与读报告
 - [`references/`](references/) — 规则、契约、边界
 

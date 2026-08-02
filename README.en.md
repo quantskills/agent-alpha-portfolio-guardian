@@ -60,8 +60,7 @@ Samples: [`reports/samples/mock_run/`](reports/samples/mock_run/), [`reports/sam
 
 ```text
 agent-alpha-portfolio-guardian/
-├── AGENTS.md                 Agent declaration and multi-runtime entry (required)
-├── SKILL.md                  Full behavior and usage rules
+├── AGENTS.md                 Agent declaration + behavior entry (required)
 ├── README.md / README.en.md  Repository homepage
 ├── LICENSE                   GPL-3.0-only
 ├── 用户使用手册.md            Configuration guide (Chinese)
@@ -103,11 +102,11 @@ Dependencies: `skill-factor-evaluate`, `skill-factor-decay`, `agent-crowding-ris
 
 ## Runtime Compatibility
 
-[`AGENTS.md`](AGENTS.md) is the QuantSkills Agent declaration; detailed behavior is in [`SKILL.md`](SKILL.md). Loadable in **Claude Code, Codex, Cursor, Hermes, and OpenClaw**:
+[`AGENTS.md`](AGENTS.md) is the sole QuantSkills Agent declaration and behavior entry. Loadable in **Claude Code, Codex, Cursor, Hermes, and OpenClaw**:
 
 | Runtime | Entry |
 | --- | --- |
-| Claude Code / Codex | Load this folder + four dependencies |
+| Claude Code / Codex | Load this folder's `AGENTS.md` + four dependencies |
 | Cursor | `.cursor/skills/agent-alpha-portfolio-guardian` + `agents/cursor-rule.mdc` |
 | Hermes / OpenClaw | `agents/portable-loader.md` |
 | OpenAI-compatible | `agents/openai.yaml` |
@@ -132,8 +131,7 @@ Publish metadata: [`agents/skill-manifest.yaml`](agents/skill-manifest.yaml).
 
 ## Reference Documents
 
-- [`AGENTS.md`](AGENTS.md) — declaration, scenarios, limits, metadata
-- [`SKILL.md`](SKILL.md) — behavior entry and workflow
+- [`AGENTS.md`](AGENTS.md) — declaration, behavior, scenarios, limits, metadata
 - [`用户使用手册.md`](用户使用手册.md) — configuration guide
 - [`references/`](references/) — rules, contracts, boundaries
 

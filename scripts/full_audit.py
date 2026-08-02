@@ -313,8 +313,10 @@ def main() -> int:
     ok("rules.map_crowding", map_crowding_scenario("延续", "") == "info")
 
     required_paths = [
-        "SKILL.md",
+        "AGENTS.md",
         "README.md",
+        "README.en.md",
+        "LICENSE",
         "requirements.txt",
         ".env.example",
         ".gitignore",
@@ -338,11 +340,6 @@ def main() -> int:
         "references/decision-rules.md",
         "references/dependency-contracts.md",
         "references/agent-boundary.md",
-        "AGENTS.md",
-        "README.md",
-        "README.en.md",
-        "LICENSE",
-        "SKILL.md",
         "agents/skill-manifest.yaml",
         "agents/cursor-rule.mdc",
         "agents/openai.yaml",
