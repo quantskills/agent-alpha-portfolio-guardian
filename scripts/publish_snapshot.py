@@ -29,6 +29,7 @@ PUBLISH_FILES = [
     "validation.json",
     "handoff_card.md",
     "pandadata_redline.json",
+    "trade_calendar.json",
 ]
 
 
@@ -58,8 +59,11 @@ def publish(run_dir: Path, publish_root: Path) -> Path:
     if charts.exists():
         shutil.copytree(charts, dest / "charts", dirs_exist_ok=True)
 
+    from runtime.paths import portable_ref
+
     meta = {
-        "published_from": str(run_dir),
+        # 发布目录自描述；来源 run 用可移植引用，避免写入他机绝对路径
+        "published_from": portable_ref(run_dir),
         "as_of_date": as_of,
         "source_mode": mode,
         "data_version": snap.get("data_version"),

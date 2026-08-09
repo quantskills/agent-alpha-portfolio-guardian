@@ -18,6 +18,23 @@
 
 > **In my current multi-factor book, which factors remain healthy, which look crowded or decaying, and which deserve watch / deweight / retire / rebuild research?**
 
+| Question | Output |
+|----------|--------|
+| Healthy vs decaying? | Health matrix |
+| Crowding / stampede risk? | Crowding alerts |
+| Watch / deweight / retire / rebuild? | Candidate list |
+| How long do signals last? | IC decay curves |
+| Are the guardian rules historically sensible? | Effectiveness backtest L4 |
+
+Behavior entry: [`AGENTS.md`](AGENTS.md). Rules: [`references/decision-rules.md`](references/decision-rules.md). Full Chinese how-to lives in [`README.md`](README.md).
+
+## What It Does Not Do
+
+- No orders; no “buy / sell / must-rise / raise position to xx%”
+- Not an `alpha-*` production factor package
+- Does not invent numbers when dependencies fail
+- Does not replace `skill-factor-evaluate` / `skill-factor-decay` computation
+
 ## Workflow
 
 ```mermaid
@@ -35,50 +52,11 @@ flowchart LR
     r -. no orders · no broker .-> human
 ```
 
-## When To Use It
-
-- You want a weekly/daily health check across a factor book.
-- You need evaluate, decay, crowding, and smart-money evidence in one handoff pack.
-- You want descriptive effectiveness stats for the guardian rules.
-- You want the same Agent rules loaded in Claude Code / Codex / Cursor / Hermes / OpenClaw.
-
-## Deliverables
-
-Research runs write to `reports/runtime_out/`; backtests write to `reports/backtest/`:
-
-| Deliverable | Content | Form |
-| --- | --- | --- |
-| Health matrix | Score / half-life / signal / reasons | CSV / Parquet |
-| Crowding alerts | Heat warnings attached to exposures | JSON |
-| Retire / rebuild list | Action + reason codes + next step | CSV |
-| IC decay curves | Family chart + curve JSON | PNG / JSON |
-| Effectiveness L4 | Buckets / accuracy / equity / rolling OOS | `l4.html` |
-
-Samples: [`reports/samples/mock_run/`](reports/samples/mock_run/), [`reports/samples/backtest_mock/l4.html`](reports/samples/backtest_mock/l4.html).
-
-## Directory Layout
-
-```text
-agent-alpha-portfolio-guardian/
-├── AGENTS.md                 Agent declaration + behavior entry (required)
-├── README.md / README.en.md  Repository homepage
-├── LICENSE                   GPL-3.0-only
-├── 用户使用手册.md            Configuration guide (Chinese)
-├── agents/                   Cursor / OpenAI / portable loader / publish manifest
-├── runtime/                  Unified CLI and orchestration
-├── scripts/                  Bridges, validation, backtest, L4 export
-├── templates/                Report and backtest L4 templates
-├── references/               Rules, contracts, boundaries
-├── config/                   Portfolio examples
-├── reports/samples/          Structure samples
-└── requirements.txt
-```
-
 ## Quick Start
 
-**Option 1: read the sample** — open `reports/samples/mock_run/runtime_report.md` and `reports/samples/backtest_mock/l4.html`.
+**Option 1: samples** — `reports/samples/mock_run/runtime_report.md`, `reports/samples/backtest_mock/l4.html`.
 
-**Option 2: trigger inside an AI agent**
+**Option 2: agent prompt**
 
 ```text
 Run alpha-portfolio-guardian on the current multi-factor book;
@@ -89,51 +67,63 @@ read attached ScoreReport / DecayReport artifacts, degrade on gaps, do not inven
 
 ```powershell
 py -3.10 -m pip install -r requirements.txt
-# set PANDA_DATA_USERNAME / PANDA_DATA_PASSWORD when live online fetch is needed (never commit secrets)
+# set PANDA_DATA_* when live online fetch is needed (never commit secrets)
 
 python -m runtime self-test
 python -m runtime --mock
+Copy-Item config\portfolio.example.yaml config\portfolio.yaml
 python -m runtime --portfolio config/portfolio.yaml --live
 python -m runtime backtest --allow-simulate
-python -m runtime clean
 ```
 
 Dependencies: `skill-factor-evaluate`, `skill-factor-decay`, `agent-crowding-risk-monitor`, `skill-smart-money-profiler`.
 
+## Configuration & Commands
+
+Copy `config/portfolio.example.yaml` → `portfolio.yaml`. Key fields: `as_of`, `as_of_calendar.mode` (`off|soft|hard`), `universe`, `horizon_eval`, `source_mode`, `factors[]` (`score_report_path` / `decay_report_path` / `exposure_symbols`), `crowding`, `smart_money`, `thresholds`.
+
+| Command | Purpose |
+|---------|---------|
+| `python -m runtime --live` | Formal research run |
+| `python -m runtime --mock` / `self-test` | Offline smoke |
+| `python -m runtime validate` / `publish` | Gate & publish |
+| `python -m runtime backtest --from-panel-store` | Live panel ledger |
+| `python -m runtime backtest --metrics-panel …` | User panels |
+| `python -m runtime backtest --allow-simulate` | Simulated method test |
+
+Backtest requires **exactly one** source. Only **live/degraded** runs append to `data/panels/`.
+
+## Reading Outputs
+
+Research pack: `reports/runtime_out/<run_id>/` (`runtime_report.md`, `health_matrix.csv`, alerts, candidates, IC curves, `agent_snapshot.json`).  
+Publish: `reports/publish/<as_of>/<data_version>/`.  
+Backtest: `reports/backtest/<run_id>/` + `l4.html`. Signals: `keep` / `watch` / `deweight` / `retire_candidate` / `rebuild_candidate` / `insufficient`.
+
+## Directory Layout
+
+```text
+agent-alpha-portfolio-guardian/
+├── AGENTS.md / README.md / README.en.md / LICENSE
+├── agents/ runtime/ scripts/ templates/ references/ config/
+├── data/panels/              live metrics ledger (data gitignored)
+├── reports/samples/          structure samples
+└── requirements.txt
+```
+
 ## Runtime Compatibility
 
-[`AGENTS.md`](AGENTS.md) is the sole QuantSkills Agent declaration and behavior entry. Loadable in **Claude Code, Codex, Cursor, Hermes, and OpenClaw**:
+[`AGENTS.md`](AGENTS.md) is the sole behavior entry for Claude Code, Codex, Cursor, Hermes, and OpenClaw. See `agents/` for adapters.
 
-| Runtime | Entry |
-| --- | --- |
-| Claude Code / Codex | Load this folder's `AGENTS.md` + four dependencies |
-| Cursor | `.cursor/skills/agent-alpha-portfolio-guardian` + `agents/cursor-rule.mdc` |
-| Hermes / OpenClaw | `agents/portable-loader.md` |
-| OpenAI-compatible | `agents/openai.yaml` |
+## Limitations
 
-Publish metadata: [`agents/skill-manifest.yaml`](agents/skill-manifest.yaml).
-
-## Data Sources And Assumptions
-
-- Formal data origin: Pandadata (via dependency Skills or provenance-tagged cache artifacts).
-- Factors in one run must share the same `universe` and `horizon_eval`.
-- Thresholds and reason codes: `config/portfolio*.yaml` and `references/decision-rules.md`.
-- Backtest accepts metrics/fwd panels; `--allow-simulate` is for method self-test only.
-
-## Limitations And Risk Boundaries
-
-- Research and education only; validates no return claims and is not investment advice.
-- Gaps must be labeled as degraded / insufficient — do not fabricate numbers.
-- No deterministic trading orders (buy / sell / must-rise / raise position to xx%).
-- No broker connectivity and no order execution.
-- Not an `alpha-*` production factor package; trading-link delivery needs a separate Alpha process.
-- This repository is a Community Project; listing or official recognition still requires maintainer review.
+Research/education only; Pandadata origin; no fabrication; no broker orders; not an `alpha-*` production package; Community Project pending maintainer review for official listing.
 
 ## Reference Documents
 
-- [`AGENTS.md`](AGENTS.md) — declaration, behavior, scenarios, limits, metadata
-- [`用户使用手册.md`](用户使用手册.md) — configuration guide
-- [`references/`](references/) — rules, contracts, boundaries
+- [`AGENTS.md`](AGENTS.md) — declaration & behavior
+- [`README.md`](README.md) — full Chinese usage guide
+- [`references/`](references/) — rules, contracts, data guide
+- [`config/portfolio.example.yaml`](config/portfolio.example.yaml)
 
 ## Maintainer
 

@@ -65,6 +65,7 @@ horizon → IC_mean
 ## 缺口标注
 
 - mock run
+- mock: trade calendar check skipped
 
 ## 免责声明
 

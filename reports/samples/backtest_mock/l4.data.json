@@ -8,8 +8,10 @@
     "data_version": "guardian-bt-mock-v0.1+guardian-rules-v0.1",
     "source_mode": "mock",
     "simulated": true,
+    "fwd_source": "simulate",
+    "panel_store": null,
     "n_rows": 81,
-    "portfolio": "F:/ProjectGeek/skills/agent-alpha-portfolio-guardian/config/portfolio.mock.yaml"
+    "portfolio": "config/portfolio.mock.yaml"
   },
   "portfolio_stats": {
     "max_drawdown": 0.0,
@@ -265,6 +267,6 @@
       "retire_negative_fwd_ic_rate": 1.0
     }
   ],
-  "generated": "2026-08-02T23:19:32",
-  "run_dir": "F:/ProjectGeek/skills/agent-alpha-portfolio-guardian/reports/samples/backtest_mock"
+  "generated": "2026-08-09T21:47:27",
+  "run_dir": "."
 }

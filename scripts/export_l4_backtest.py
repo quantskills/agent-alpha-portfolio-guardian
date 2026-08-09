@@ -35,15 +35,6 @@ def _read_csv(path: Path) -> List[Dict[str, Any]]:
     return json.loads(df.to_json(orient="records", force_ascii=False))
 
 
-def _posix_path(value: Any) -> Any:
-    """Windows 反斜杠在 HTML/JSON 内嵌时易被 re.sub 吞掉，统一为正斜杠。"""
-    if isinstance(value, Path):
-        return value.as_posix()
-    if isinstance(value, str) and ("\\" in value or (len(value) > 1 and value[1] == ":")):
-        return value.replace("\\", "/")
-    return value
-
-
 def build_payload_from_run(run_dir: str | Path) -> Dict[str, Any]:
     """从回测输出目录组装前端 payload。"""
     rd = Path(run_dir)
@@ -61,9 +52,11 @@ def build_payload_from_run(run_dir: str | Path) -> Dict[str, Any]:
         if acc_path.exists():
             summary["accuracy"] = json.loads(acc_path.read_text(encoding="utf-8"))
 
+    from runtime.paths import portable_ref
+
     meta = dict(summary.get("meta") or {})
     if "portfolio" in meta:
-        meta["portfolio"] = _posix_path(meta["portfolio"])
+        meta["portfolio"] = portable_ref(meta["portfolio"])
 
     payload: Dict[str, Any] = {
         "meta": meta,
@@ -73,7 +66,8 @@ def build_payload_from_run(run_dir: str | Path) -> Dict[str, Any]:
         "equity": _read_csv(rd / "keep_equity.csv"),
         "rolling": _read_csv(rd / "rolling_oos.csv"),
         "generated": datetime.now().isoformat(timespec="seconds"),
-        "run_dir": rd.as_posix(),
+        # L4 嵌在产物包内，锚点即为本目录
+        "run_dir": ".",
     }
     return payload
 

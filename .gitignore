@@ -21,5 +21,8 @@ reports/backtest/**
 
 data/factors/**
 !data/factors/.gitkeep
+data/panels/**
+!data/panels/.gitkeep
+!data/panels/README.md
 scripts/.cache/*
 !scripts/.cache/.gitkeep

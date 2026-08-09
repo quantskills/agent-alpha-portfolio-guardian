@@ -22,6 +22,16 @@
 
 组合 `as_of` 为结论锚定日；缓存建议带 `data_asof`。同一组合使用同一 `universe` 与 `horizon_eval`。
 
+时点门禁：`runtime/trade_calendar.py`，配置 `as_of_calendar.mode`：
+
+| mode | 行为 |
+|------|------|
+| `off` | 不检查 |
+| `soft`（默认） | 缺凭证 / API 失败 / 非交易日（未 snap）→ warning，不阻断 |
+| `hard` | 上述问题硬失败 |
+
+`snap_to_prev: true` 时非交易日回退上一交易日。mock 或 `mode=off` 跳过。旧键 `require` 仍映射为 hard/soft。
+
 ## 降级
 
 | 情况 | 处理 |
@@ -30,4 +40,4 @@
 | 单依赖缺口 | 行级 insufficient / 警示，不编造 |
 | mock | 仅自测 |
 
-校验入口：`runtime/pandadata_gate.py`。
+校验入口：`runtime/pandadata_gate.py` + `runtime/trade_calendar.py`。

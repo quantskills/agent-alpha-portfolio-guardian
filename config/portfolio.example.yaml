@@ -9,6 +9,12 @@ source_mode: live              # live | mock | degraded
 data_source: Pandadata
 allow_pandadata_cache: true
 
+# 时点门禁：mode = off | soft | hard（旧键 require=true/false 仍兼容 → hard/soft）
+as_of_calendar:
+  mode: soft                   # soft=告警不阻断；hard=硬失败；off=关闭
+  exchange: SH
+  snap_to_prev: true           # 非交易日自动回退上一交易日
+
 factors:
   - factor_id: F001
     name: momentum_20

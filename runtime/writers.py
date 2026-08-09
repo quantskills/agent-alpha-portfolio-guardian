@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional, Sequence
 
 import pandas as pd
 
+from runtime.paths import pack_rel, portable_ref
+
 DISCLAIMER = (
     "本报告基于公开数据与规则化分析生成，仅供量化研究参考，不构成任何投资建议。"
 )
@@ -204,7 +206,7 @@ def build_handoff(
 - 结论: {l1}
 - 动作候选: {actions}
 - 缺口: {gap}
-- 产物目录: `{run_dir}`
+- 产物目录: `.`（与本文件同级）
 
 请下游研究员/Agent 只读本目录结构化文件；需要重算请显式进入研究态入口。
 
@@ -235,16 +237,19 @@ def write_report_pack(
 
     paths: Dict[str, str] = {}
 
+    def _rel(p: Path) -> str:
+        return pack_rel(p, run_dir)
+
     write_csv(run_dir / "health_matrix.csv", matrix)
-    paths["health_matrix_csv"] = str(run_dir / "health_matrix.csv")
+    paths["health_matrix_csv"] = _rel(run_dir / "health_matrix.csv")
     if try_write_parquet(run_dir / "health_matrix.parquet", matrix):
-        paths["health_matrix_parquet"] = str(run_dir / "health_matrix.parquet")
+        paths["health_matrix_parquet"] = _rel(run_dir / "health_matrix.parquet")
 
     write_csv(run_dir / "retire_rebuild_candidates.csv", candidates)
-    paths["retire_rebuild_csv"] = str(run_dir / "retire_rebuild_candidates.csv")
+    paths["retire_rebuild_csv"] = _rel(run_dir / "retire_rebuild_candidates.csv")
 
     write_json(run_dir / "crowding_alerts.json", alerts)
-    paths["crowding_alerts"] = str(run_dir / "crowding_alerts.json")
+    paths["crowding_alerts"] = _rel(run_dir / "crowding_alerts.json")
 
     curve_payload = {
         "as_of_date": as_of,
@@ -252,14 +257,14 @@ def write_report_pack(
         "ascii": ascii_ic_decay(curves),
     }
     write_json(run_dir / "ic_decay_curves.json", curve_payload)
-    paths["ic_decay_curves"] = str(run_dir / "ic_decay_curves.json")
+    paths["ic_decay_curves"] = _rel(run_dir / "ic_decay_curves.json")
 
     png = try_plot_ic_decay(charts, curves)
     if png:
-        paths["ic_decay_png"] = str(png)
+        paths["ic_decay_png"] = _rel(Path(png))
     else:
         (charts / "ic_decay_ascii.txt").write_text(curve_payload["ascii"], encoding="utf-8")
-        paths["ic_decay_ascii"] = str(charts / "ic_decay_ascii.txt")
+        paths["ic_decay_ascii"] = _rel(charts / "ic_decay_ascii.txt")
 
     report = build_runtime_report(
         l1=l1,
@@ -274,13 +279,20 @@ def write_report_pack(
         as_of=as_of,
     )
     (run_dir / "runtime_report.md").write_text(report, encoding="utf-8")
-    paths["runtime_report"] = str(run_dir / "runtime_report.md")
+    paths["runtime_report"] = _rel(run_dir / "runtime_report.md")
 
     handoff = build_handoff(
         l1=l1, as_of=as_of, run_dir=run_dir, candidates=candidates, gaps=gaps
     )
     (run_dir / "handoff_card.md").write_text(handoff, encoding="utf-8")
-    paths["handoff_card"] = str(run_dir / "handoff_card.md")
+    paths["handoff_card"] = _rel(run_dir / "handoff_card.md")
+
+    summary_out = dict(run_summary)
+    if "portfolio" in summary_out:
+        summary_out["portfolio"] = portable_ref(summary_out.get("portfolio"))
+    validation_out = dict(validation)
+    # 产物包自描述：run_dir 锚点为包根
+    validation_out["run_dir"] = "."
 
     snapshot = {
         "agent": "agent-alpha-portfolio-guardian",
@@ -298,10 +310,10 @@ def write_report_pack(
         "paths": paths,
     }
     write_json(run_dir / "agent_snapshot.json", snapshot)
-    write_json(run_dir / "run_summary.json", run_summary)
-    write_json(run_dir / "validation.json", validation)
+    write_json(run_dir / "run_summary.json", summary_out)
+    write_json(run_dir / "validation.json", validation_out)
     write_json(run_dir / "deps" / "index.json", deps_index)
-    paths["agent_snapshot"] = str(run_dir / "agent_snapshot.json")
-    paths["run_summary"] = str(run_dir / "run_summary.json")
-    paths["validation"] = str(run_dir / "validation.json")
+    paths["agent_snapshot"] = _rel(run_dir / "agent_snapshot.json")
+    paths["run_summary"] = _rel(run_dir / "run_summary.json")
+    paths["validation"] = _rel(run_dir / "validation.json")
     return paths

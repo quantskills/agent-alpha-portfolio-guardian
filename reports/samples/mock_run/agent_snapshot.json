@@ -11,16 +11,17 @@
   "n_candidates": 1,
   "n_alerts": 1,
   "gaps": [
-    "mock run"
+    "mock run",
+    "mock: trade calendar check skipped"
   ],
   "paths": {
-    "health_matrix_csv": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\health_matrix.csv",
-    "health_matrix_parquet": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\health_matrix.parquet",
-    "retire_rebuild_csv": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\retire_rebuild_candidates.csv",
-    "crowding_alerts": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\crowding_alerts.json",
-    "ic_decay_curves": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\ic_decay_curves.json",
-    "ic_decay_png": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\charts\\ic_decay_family.png",
-    "runtime_report": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\runtime_report.md",
-    "handoff_card": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\reports\\runtime_out\\_self_test\\handoff_card.md"
+    "health_matrix_csv": "health_matrix.csv",
+    "health_matrix_parquet": "health_matrix.parquet",
+    "retire_rebuild_csv": "retire_rebuild_candidates.csv",
+    "crowding_alerts": "crowding_alerts.json",
+    "ic_decay_curves": "ic_decay_curves.json",
+    "ic_decay_png": "charts/ic_decay_family.png",
+    "runtime_report": "runtime_report.md",
+    "handoff_card": "handoff_card.md"
   }
 }

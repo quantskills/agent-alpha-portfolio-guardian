@@ -32,9 +32,10 @@ def run(
     from validate_report import validate_run_dir
 
     from runtime.pandadata_gate import PandadataRedLineError, enforce_live_red_line
+    from runtime.paths import portable_ref
+    from runtime.trade_calendar import enforce_as_of_calendar
 
     cfg = load_portfolio(portfolio)
-    as_of = cfg["as_of"]
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     if output_dir:
         run_dir = Path(output_dir)
@@ -59,12 +60,25 @@ def run(
         )
         raise SystemExit(f"data source check failed: {e}") from e
 
+    cal = enforce_as_of_calendar(cfg)
+    (run_dir / "trade_calendar.json").write_text(
+        json.dumps(cal, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    if not cal.get("ok", False):
+        raise SystemExit(
+            "as_of trade calendar check failed: " + "; ".join(cal.get("errors") or [])
+        )
+    as_of = cfg["as_of"]
+
     (run_dir / "pandadata_redline.json").write_text(
         json.dumps(redline, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
     # 1-2 契约已在 load_portfolio；信号文件存在性检查
     gaps_pre = list(redline.get("warnings") or [])
+    for w in cal.get("warnings") or []:
+        if w not in gaps_pre:
+            gaps_pre.append(w)
     if cfg["source_mode"] == "live":
         for fac in cfg["factors"]:
             sp = fac.get("signal_path")
@@ -117,11 +131,14 @@ def run(
 
     run_summary = {
         "run_id": run_dir.name,
-        "portfolio": cfg.get("_config_path"),
+        "portfolio": portable_ref(
+            cfg.get("_config_arg") or cfg.get("_config_path")
+        ),
         "as_of": agg["as_of"],
         "source_mode": agg["source_mode"],
         "data_source": cfg.get("data_source") or "Pandadata",
         "pandadata_redline": redline,
+        "trade_calendar": cal,
         "data_version": agg["data_version"],
         "update_time": agg["update_time"],
         "rules_version": agg["rules_version"],
@@ -170,6 +187,26 @@ def run(
     else:
         validation = {"ok": True, "skipped": True}
 
+    # 历史面板库：仅 live/degraded 入账（失败不阻断主链路）
+    panel_stats: Dict[str, Any]
+    if cfg["source_mode"] in {"live", "degraded"}:
+        try:
+            from runtime.panel_store import append_from_run
+
+            panel_stats = append_from_run(run_dir)
+        except Exception as exc:  # noqa: BLE001
+            panel_stats = {"ok": False, "error": str(exc)}
+    else:
+        panel_stats = {
+            "ok": True,
+            "skipped": True,
+            "reason": "panel store only accepts live/degraded",
+            "n_appended": 0,
+        }
+    (run_dir / "panel_store.json").write_text(
+        json.dumps(panel_stats, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
     return {
         "run_dir": str(run_dir),
         "paths": paths,
@@ -178,4 +215,5 @@ def run(
         "source_mode": agg["source_mode"],
         "data_version": agg["data_version"],
         "gaps": agg["gaps"],
+        "panel_store": panel_stats,
     }

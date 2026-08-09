@@ -96,6 +96,24 @@ def validate_run_dir(run_dir: Path) -> Dict[str, Any]:
         snap_obj = json.loads(snap.read_text(encoding="utf-8"))
         if not snap_obj.get("as_of_date"):
             errors.append("agent_snapshot missing as_of_date")
+        # 产物包路径应相对 run_dir，禁止残留绝对路径
+        for key, val in (snap_obj.get("paths") or {}).items():
+            s = str(val)
+            if ":\\" in s or s.startswith("/") or s.startswith("~"):
+                errors.append(f"agent_snapshot.paths[{key}] must be pack-relative, got={s!r}")
+
+    cal_path = run_dir / "trade_calendar.json"
+    if not cal_path.exists():
+        warnings.append("missing trade_calendar.json")
+    else:
+        try:
+            cal = json.loads(cal_path.read_text(encoding="utf-8"))
+            if cal.get("ok") is False:
+                errors.append(
+                    "trade_calendar not ok: " + "; ".join(cal.get("errors") or [])
+                )
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"invalid trade_calendar.json: {exc}")
 
     from runtime.pandadata_gate import is_pandadata_source
 
@@ -134,7 +152,8 @@ def validate_run_dir(run_dir: Path) -> Dict[str, Any]:
         "ok": ok,
         "errors": errors,
         "warnings": warnings,
-        "run_dir": str(run_dir),
+        # 相对产物包根；调用方持有绝对 run_dir
+        "run_dir": ".",
     }
 
 

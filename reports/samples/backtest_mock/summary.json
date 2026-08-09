@@ -8,8 +8,10 @@
     "data_version": "guardian-bt-mock-v0.1+guardian-rules-v0.1",
     "source_mode": "mock",
     "simulated": true,
+    "fwd_source": "simulate",
+    "panel_store": null,
     "n_rows": 81,
-    "portfolio": "F:\\ProjectGeek\\skills\\agent-alpha-portfolio-guardian\\config\\portfolio.mock.yaml"
+    "portfolio": "config/portfolio.mock.yaml"
   },
   "portfolio_stats": {
     "max_drawdown": 0.0,

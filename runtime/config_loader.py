@@ -30,6 +30,8 @@ def _resolve(path: Optional[str], base: Path) -> Optional[Path]:
 
 
 def load_portfolio(path: str | Path) -> Dict[str, Any]:
+    # 保留调用方原始入参（相对路径可直接写入可移植摘要）
+    config_arg = str(path)
     cfg_path = Path(path)
     if not cfg_path.is_absolute():
         cfg_path = (ROOT / cfg_path).resolve()
@@ -40,6 +42,7 @@ def load_portfolio(path: str | Path) -> Dict[str, Any]:
         raw = yaml.safe_load(f) or {}
 
     cfg = deepcopy(raw)
+    cfg["_config_arg"] = config_arg
     cfg["_config_path"] = str(cfg_path)
     cfg["_config_dir"] = str(cfg_path.parent)
 

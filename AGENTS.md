@@ -51,7 +51,7 @@ quantSkills:
 
 # Alpha Portfolio Guardian Agent
 
-本文是本仓库**唯一** Agent 行为入口与 QuantSkills 声明（`AGENTS.md`）。仓库主页见 [README.md](README.md)；配置与读报告见 [用户使用手册.md](用户使用手册.md)。
+本文是本仓库**唯一** Agent 行为入口与 QuantSkills 声明（`AGENTS.md`）。仓库主页与使用说明见 [README.md](README.md)。
 
 Use this Agent when a user needs a Pandadata-backed research answer for:
 
@@ -171,18 +171,22 @@ Maintained by `frocir` as a QuantSkills community project.
 - Crowding and smart-money side evidence attached to factor exposures.
 - IC decay comparison across the book.
 - Offline mock / self-test of package layout and validators.
-- Research-only guardian-rule effectiveness backtest (simulate or metrics/fwd panels).
+- Research-only guardian-rule effectiveness backtest (panel store / metrics-fwd panels / simulate).
 
 ## 验收与降级 / Limitations
 
 - live 结论来自本次依赖产物，禁止用记忆覆盖
+- **live 模式为依赖报告桥接 / Pandadata 溯源缓存消费**，非进程内实时重算 evaluate（`skill-factor-evaluate` 无 Python 计算入口）；decay 同理优先读 DecayReport
+- live `as_of` 日历门禁：`as_of_calendar.mode` = `off|soft|hard`（见 `runtime/trade_calendar.py`）
 - 依赖失败：标注 `gap_notes` / `insufficient`，禁止编造
 - `source_mode`：`live` / `mock` / `degraded`；版本前缀区分
 - 禁止用语：买入 / 卖出 / 必涨 / 仓位提到 xx%
+- 产物包内路径相对 `run_dir`（`agent_snapshot.paths` 等），整包可复制、与机器无关
 - Research and education only. Outputs are **not** investment advice and do **not** promise returns.
 - No broker connectivity, no order placement.
 - Not a substitute for an Alpha production package.
 - Backtest validates **guardian-rule** historical statistics, not a full Alpha production IC backtest.
+- Only live/degraded runs append `health_matrix` into `data/panels/`; backtest must choose exactly one of `--from-panel-store` / `--metrics-panel` / `--allow-simulate`.
 - Community Project；收录或官方认可仍需维护者审核。
 
 ## Data Source And Assumptions
@@ -194,7 +198,7 @@ Maintained by `frocir` as a QuantSkills community project.
 
 ## Reference Documents
 
-- [`用户使用手册.md`](用户使用手册.md) — configuration and how to read reports
+- [`README.md`](README.md) — configuration, commands, and how to read reports
 - [`references/decision-rules.md`](references/decision-rules.md) — rules and reason codes
 - [`references/dependency-contracts.md`](references/dependency-contracts.md) — dependency contracts
 - [`agents/portable-loader.md`](agents/portable-loader.md) — portable runtime loader prompt

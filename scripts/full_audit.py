@@ -312,6 +312,73 @@ def main() -> int:
     ok("rules.deweight_critical_crowd", d.signal == "deweight", d.signal)
     ok("rules.map_crowding", map_crowding_scenario("延续", "") == "info")
 
+    from runtime.panel_store import (
+        build_fwd_from_metrics,
+        health_matrix_to_metrics,
+        upsert_metrics,
+    )
+    import pandas as pd
+
+    hm = pd.read_csv(ROOT / "reports/samples/mock_run/health_matrix.csv")
+    metrics_one = health_matrix_to_metrics(hm)
+    ok("panel.health_to_metrics", len(metrics_one) == 3 and "date" in metrics_one.columns)
+    tmp_store = ROOT / "reports" / "runtime_out" / "_panel_store_audit.parquet"
+    if tmp_store.exists():
+        tmp_store.unlink()
+    # 两期以便拼 fwd
+    m2 = metrics_one.copy()
+    m2["date"] = "2026-06-30"
+    upsert_metrics(pd.concat([metrics_one, m2], ignore_index=True), store=tmp_store)
+    fwd, src = build_fwd_from_metrics(
+        pd.concat([metrics_one, m2], ignore_index=True), horizon=20
+    )
+    ok("panel.build_fwd_approx", len(fwd) >= 1 and src == "next_rank_ic_approx", f"n={len(fwd)}")
+
+    from runtime.trade_calendar import evaluate_calendar_row
+
+    trade_ok = evaluate_calendar_row(
+        "2026-07-31", {"nature_date": 20260731, "is_trade": 1, "pretrade_date": "20260730"}
+    )
+    ok("calendar.accept_trade_day", trade_ok.get("ok") is True, trade_ok)
+    trade_bad = evaluate_calendar_row(
+        "2026-08-01",
+        {
+            "nature_date": 20260801,
+            "is_trade": 0,
+            "pretrade_date": "20260731",
+            "next_trade_date": "20260804",
+        },
+    )
+    ok(
+        "calendar.reject_non_trade_day",
+        trade_bad.get("ok") is False and trade_bad.get("suggested_as_of") == "2026-07-31",
+        trade_bad,
+    )
+
+    # 样例不得残留他机绝对路径
+    abs_hits = []
+    sample_roots = [
+        ROOT / "reports" / "samples" / "mock_run",
+        ROOT / "reports" / "samples" / "backtest_mock",
+    ]
+    for sroot in sample_roots:
+        if not sroot.exists():
+            continue
+        for fp in sroot.rglob("*"):
+            if not fp.is_file():
+                continue
+            if fp.suffix.lower() not in {".json", ".md", ".html", ".csv", ".txt"}:
+                continue
+            try:
+                text = fp.read_text(encoding="utf-8")
+            except Exception:
+                continue
+            if "ProjectGeek" in text or ":\\" in text or "/Users/" in text or "/home/" in text:
+                # 允许文档中以相对路径示例提及仓库名；仅拦盘符/用户目录形态
+                if ":\\" in text or "/Users/" in text or "/home/" in text:
+                    abs_hits.append(str(fp.relative_to(ROOT)))
+    ok("samples.no_machine_abs_paths", not abs_hits, abs_hits[:8])
+
     required_paths = [
         "AGENTS.md",
         "README.md",
@@ -328,6 +395,10 @@ def main() -> int:
         "runtime/rules.py",
         "runtime/writers.py",
         "runtime/config_loader.py",
+        "runtime/trade_calendar.py",
+        "runtime/paths.py",
+        "runtime/panel_store.py",
+        "data/panels/README.md",
         "scripts/run_evaluate_batch.py",
         "scripts/run_decay_batch.py",
         "scripts/run_crowding_bridge.py",
@@ -351,25 +422,11 @@ def main() -> int:
         "reports/samples/backtest_mock/l4.html",
     ]
     miss_paths = [p for p in required_paths if not (ROOT / p).exists()]
-    # 中文手册用内容特征探测，避免 Windows 控制台编码误判
-    zh_docs = {
-        "用户使用手册.md": "Alpha 多因子组合健康度守卫",
-    }
-    for name, needle in zh_docs.items():
-        p = ROOT / name
-        if p.exists():
-            continue
-        found = False
-        for cand in ROOT.glob("*.md"):
-            try:
-                txt = cand.read_text(encoding="utf-8")
-            except Exception:
-                continue
-            if needle in txt:
-                found = True
-                break
-        if not found:
-            miss_paths.append(name)
+    # README 应承载原使用手册要点（配置 / 命令 / 读报告）
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    for needle in ("portfolio.example.yaml", "as_of_calendar", "--from-panel-store", "health_matrix"):
+        if needle not in readme:
+            miss_paths.append(f"README.md missing:{needle}")
     ok("structure.design_files", not miss_paths, f"missing={miss_paths}")
 
     broken = ROOT / "reports/runtime_out/_broken_validate"
@@ -397,10 +454,9 @@ def main() -> int:
     ok("publish.refuse_invalid", pub.returncode != 0, (pub.stderr or pub.stdout)[-160:])
 
     known_gaps = [
-        "live evaluate/decay 仍为报告桥接，未进程内调用依赖计算入口",
+        "live evaluate/decay 仍为报告桥接/缓存消费，未进程内调用依赖计算入口（evaluate Skill 无 Python 计算入口）",
         "live smart-money 需预置 sample_path 或宿主执行 Skill",
-        "时点门禁未对接交易日历 API",
-        "回测历史面板需用户提供 metrics/fwd panel（模拟路径已覆盖自测）",
+        "panel store 后验默认 next_rank_ic 近似；真实 fwd_ret 仍需用户 fwd_panel 或更长实盘累积",
     ]
 
     n_pass = sum(1 for r in results if r["pass"])

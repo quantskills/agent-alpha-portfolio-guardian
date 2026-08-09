@@ -137,12 +137,20 @@ def cmd_self_test(args: argparse.Namespace) -> int:
     if out.exists():
         shutil.rmtree(out)
     state = run(
-        ROOT / "config" / "portfolio.mock.yaml",
+        "config/portfolio.mock.yaml",
         output_dir=out,
         skip_validate=False,
     )
     if not state["validation"].get("ok"):
         print("[FAIL] self-test validation:", state["validation"])
+        return 1
+
+    from runtime.panel_store import store_coverage, upsert_metrics
+    from backtest import run_backtest, simulate_panels
+
+    ps = state.get("panel_store") or {}
+    if not ps.get("skipped"):
+        print("[FAIL] mock run should skip panel store:", ps)
         return 1
 
     # 复制一份到 samples（结构样例）
@@ -151,7 +159,35 @@ def cmd_self_test(args: argparse.Namespace) -> int:
         shutil.rmtree(sample)
     shutil.copytree(out, sample)
 
-    from backtest import run_backtest
+    # 隔离 store 冒烟 --from-panel-store（不写默认 data/panels）
+    iso_store = ROOT / "reports" / "runtime_out" / "_self_test_panel_store.parquet"
+    if iso_store.exists():
+        iso_store.unlink()
+    sim_m, _ = simulate_panels("2024-01-01", "2025-12-31", 20, 20)
+    upsert_metrics(sim_m, store=iso_store)
+    cov = store_coverage(iso_store)
+    if not cov.get("ok_for_backtest"):
+        print("[FAIL] panel store coverage:", cov)
+        return 1
+    bt_store = run_backtest(
+        argparse.Namespace(
+            start_date="2024-01-01",
+            end_date="2025-12-31",
+            rebalance_days=20,
+            horizon=20,
+            metrics_panel="",
+            fwd_panel="",
+            from_panel_store=True,
+            panel_store=str(iso_store),
+            portfolio="config/portfolio.mock.yaml",
+            output_dir=str(ROOT / "reports" / "backtest"),
+            allow_simulate=False,
+            rules_version="",
+        )
+    )
+    if not (bt_store.get("meta") or {}).get("fwd_source"):
+        print("[FAIL] from-panel-store missing fwd_source")
+        return 1
 
     bt = run_backtest(
         argparse.Namespace(
@@ -161,7 +197,9 @@ def cmd_self_test(args: argparse.Namespace) -> int:
             horizon=20,
             metrics_panel="",
             fwd_panel="",
-            portfolio=str(ROOT / "config" / "portfolio.mock.yaml"),
+            from_panel_store=False,
+            panel_store="",
+            portfolio="config/portfolio.mock.yaml",
             output_dir=str(ROOT / "reports" / "backtest"),
             allow_simulate=True,
             rules_version="",
@@ -175,6 +213,7 @@ def cmd_self_test(args: argparse.Namespace) -> int:
     print("[OK] self-test passed")
     print(f"[OK] sample refreshed → {sample}")
     print(f"[OK] backtest sample → {bt_sample}")
+    print(f"[OK] panel store → dates={cov.get('n_dates')} rows={cov.get('n_rows')}")
     print(f"[OK] L1: {state['l1']}")
     return 0
 
@@ -190,15 +229,23 @@ def cmd_backtest(args: argparse.Namespace) -> int:
         horizon=args.horizon,
         metrics_panel=args.metrics_panel or "",
         fwd_panel=args.fwd_panel or "",
-        portfolio=args.portfolio
-        or str(ROOT / "config" / "portfolio.mock.yaml"),
+        from_panel_store=bool(getattr(args, "from_panel_store", False)),
+        panel_store=getattr(args, "panel_store", "") or "",
+        portfolio=args.portfolio or "config/portfolio.mock.yaml",
         output_dir=args.output_dir or str(ROOT / "reports" / "backtest"),
         allow_simulate=bool(args.allow_simulate),
         rules_version=args.rules_version or "",
     )
-    if not ns.metrics_panel and not ns.allow_simulate:
-        ns.allow_simulate = True
-        print("[INFO] no metrics panel; using --allow-simulate")
+    sources = [
+        bool(ns.metrics_panel),
+        bool(ns.from_panel_store),
+        bool(ns.allow_simulate),
+    ]
+    if sum(sources) != 1:
+        raise SystemExit(
+            "backtest requires exactly one source: "
+            "--from-panel-store | --metrics-panel PATH | --allow-simulate"
+        )
     result = run_backtest(ns)
     print(f"[OK] backtest → {result['run_dir']}")
     if result.get("l4_html"):
@@ -266,6 +313,12 @@ def build_parser() -> argparse.ArgumentParser:
     bt.add_argument("--horizon", type=int, default=20)
     bt.add_argument("--metrics-panel", default="")
     bt.add_argument("--fwd-panel", default="")
+    bt.add_argument(
+        "--from-panel-store",
+        action="store_true",
+        help="使用 data/panels 累积面板（研究态自动追加）",
+    )
+    bt.add_argument("--panel-store", default="", help="自定义 panel store 路径")
     bt.add_argument("--portfolio", default=None)
     bt.add_argument("--output-dir", default=None)
     bt.add_argument("--allow-simulate", action="store_true")

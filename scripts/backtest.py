@@ -10,6 +10,7 @@
 用法：
   python scripts/backtest.py --allow-simulate --start_date 2024-01-01 --end_date 2025-12-31
   python scripts/backtest.py --metrics-panel path.csv --fwd-panel path.csv
+  python -m runtime backtest --from-panel-store
   python -m runtime backtest --allow-simulate
 """
 from __future__ import annotations
@@ -43,6 +44,16 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p.add_argument("--horizon", type=int, default=20, help="信号后验窗口（日）")
     p.add_argument("--metrics-panel", default="", help="历史因子证据面板 CSV/Parquet")
     p.add_argument("--fwd-panel", default="", help="后验表现面板 CSV/Parquet（可选，缺则由 metrics 推导）")
+    p.add_argument(
+        "--from-panel-store",
+        action="store_true",
+        help="从 data/panels/metrics_panel.* 读取（研究态自动累积）",
+    )
+    p.add_argument(
+        "--panel-store",
+        default="",
+        help="自定义 panel store 路径（默认 data/panels/metrics_panel.parquet）",
+    )
     p.add_argument("--portfolio", default="config/portfolio.mock.yaml")
     p.add_argument("--output-dir", default="reports/backtest")
     p.add_argument(
@@ -384,19 +395,68 @@ def run_backtest(args: argparse.Namespace) -> Dict[str, Any]:
         rules_version = args.rules_version
 
     simulated = False
+    fwd_source = None
+    panel_store_meta: Dict[str, Any] = {}
+    from_store = bool(getattr(args, "from_panel_store", False))
+
     if args.metrics_panel:
         metrics = _load_table(args.metrics_panel)
         if args.fwd_panel:
             fwd = _load_table(args.fwd_panel)
+            fwd_source = "user_fwd_panel"
         else:
-            # 由下一期 rank_ic 近似后验
-            m = metrics.sort_values(["factor_id", "date"]).copy()
-            m["fwd_ic"] = m.groupby("factor_id")["rank_ic"].shift(-1)
-            m["fwd_ret"] = m["fwd_ic"] * 0.5
-            m["horizon"] = args.horizon
-            fwd = m[["date", "factor_id", "fwd_ic", "fwd_ret", "horizon"]].dropna()
+            from runtime.panel_store import build_fwd_from_metrics
+
+            fwd, fwd_source = build_fwd_from_metrics(metrics, horizon=args.horizon)
         source_mode = "live"
         data_version = f"guardian-bt-v0.1+{rules_version}"
+    elif from_store:
+        from runtime.panel_store import DEFAULT_STORE, resolve_for_backtest
+
+        store = getattr(args, "panel_store", "") or str(DEFAULT_STORE)
+        resolved = resolve_for_backtest(
+            store=store,
+            start_date=args.start_date,
+            end_date=args.end_date,
+            horizon=args.horizon,
+        )
+        panel_store_meta = {
+            k: resolved.get(k)
+            for k in ("store", "coverage", "fwd_source", "error")
+            if k in resolved
+        }
+        if not resolved.get("ok"):
+            if args.allow_simulate:
+                print(f"[WARN] panel store unavailable ({resolved.get('error')}); fallback simulate")
+                metrics, fwd = simulate_panels(
+                    args.start_date, args.end_date, args.rebalance_days, args.horizon
+                )
+                simulated = True
+                source_mode = "mock"
+                data_version = f"guardian-bt-mock-v0.1+{rules_version}"
+                fwd_source = "simulate"
+            else:
+                raise SystemExit(
+                    "panel store not ready: "
+                    f"{resolved.get('error')}; "
+                    "keep running research mode, or pass --allow-simulate / --metrics-panel"
+                )
+        else:
+            metrics = resolved["metrics"]
+            fwd = resolved["fwd"]
+            fwd_source = resolved.get("fwd_source")
+            # store 含 mock 行则整体标 mock，避免假 live
+            sim_col = (
+                metrics["simulated"].fillna(False)
+                if "simulated" in metrics.columns
+                else pd.Series(False, index=metrics.index)
+            )
+            if bool(sim_col.any()):
+                source_mode = "mock"
+                data_version = f"guardian-bt-store-mock-v0.1+{rules_version}"
+            else:
+                source_mode = "live"
+                data_version = f"guardian-bt-store-v0.1+{rules_version}"
     elif args.allow_simulate:
         metrics, fwd = simulate_panels(
             args.start_date, args.end_date, args.rebalance_days, args.horizon
@@ -404,9 +464,11 @@ def run_backtest(args: argparse.Namespace) -> Dict[str, Any]:
         simulated = True
         source_mode = "mock"
         data_version = f"guardian-bt-mock-v0.1+{rules_version}"
+        fwd_source = "simulate"
     else:
         raise SystemExit(
-            "need --metrics-panel or --allow-simulate (no silent simulation)"
+            "need --from-panel-store or --metrics-panel or --allow-simulate "
+            "(no silent simulation)"
         )
 
     metrics["date"] = pd.to_datetime(metrics["date"]).dt.strftime("%Y-%m-%d")
@@ -429,6 +491,8 @@ def run_backtest(args: argparse.Namespace) -> Dict[str, Any]:
     run_dir = out_dir / stamp
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    from runtime.paths import portable_ref
+
     meta = {
         "start_date": args.start_date,
         "end_date": args.end_date,
@@ -438,8 +502,10 @@ def run_backtest(args: argparse.Namespace) -> Dict[str, Any]:
         "data_version": data_version,
         "source_mode": source_mode,
         "simulated": simulated,
+        "fwd_source": fwd_source,
+        "panel_store": panel_store_meta or None,
         "n_rows": int(len(panel)),
-        "portfolio": args.portfolio,
+        "portfolio": portable_ref(args.portfolio),
     }
 
     panel.to_csv(run_dir / "signal_forward_panel.csv", index=False, encoding="utf-8-sig")
