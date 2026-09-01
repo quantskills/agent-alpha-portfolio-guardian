@@ -20,7 +20,6 @@ metadata:
   requires:
     - skill-factor-evaluate
     - skill-factor-decay
-    - agent-crowding-risk-monitor
     - skill-smart-money-profiler
   summary_zh: 多因子组合健康度守卫：健康度矩阵 + 拥挤警示 + 退休/重构候选 + IC 衰减曲线，含守卫规则有效性回测 L4。
   summary_en: Multi-factor portfolio health guardian producing a health matrix, crowding alerts, retire/rebuild candidates, IC decay curves, and a research-only effectiveness backtest L4 page.
@@ -43,7 +42,6 @@ quantSkills:
   requires:
     - skill-factor-evaluate
     - skill-factor-decay
-    - agent-crowding-risk-monitor
     - skill-smart-money-profiler
   summary_zh: 多因子组合健康度守卫：健康度矩阵 + 拥挤警示 + 退休/重构候选 + IC 衰减曲线，含守卫规则有效性回测 L4。
   summary_en: Multi-factor portfolio health guardian producing a health matrix, crowding alerts, retire/rebuild candidates, IC decay curves, and a research-only effectiveness backtest L4 page.
@@ -71,7 +69,7 @@ This is a **Community Project** under QuantSkills. It is a portfolio / guardian 
 |------|------|
 | `skill-factor-evaluate` | ScoreReport |
 | `skill-factor-decay` | DecayReport / IC 曲线 |
-| `agent-crowding-risk-monitor` | snapshot / scorecard |
+| 外部拥挤度快照（可选） | snapshot / scorecard；不作为可安装依赖 |
 | `skill-smart-money-profiler` | 合力/分歧旁证 |
 
 调用依赖前阅读其 `SKILL.md` / `AGENTS.md`（依赖仓库自身入口）。
@@ -79,7 +77,7 @@ This is a **Community Project** under QuantSkills. It is a portfolio / guardian 
 ## What It Does
 
 1. **Factor health matrix** — consume ScoreReport / DecayReport evidence into portfolio-level scores, half-life, and coarse signals.
-2. **Crowding alerts** — bridge `agent-crowding-risk-monitor` snapshots onto factor exposures.
+2. **Crowding alerts** — bridge user-supplied external crowding snapshots onto factor exposures.
 3. **Retire / rebuild candidates** — rule engine with reason codes (`SIGN_REVERSAL`, noise, high turnover, critical crowd, etc.).
 4. **IC decay curves** — family chart + JSON for rebalance horizon comparison.
 5. **Guardian-rule effectiveness backtest** — bucket / accuracy / keep-path MDD / rolling OOS + SCI-style `l4.html`.
