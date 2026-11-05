@@ -7,4 +7,4 @@ PyYAML>=6.0
 matplotlib>=3.7
 
 # live 模式经依赖 Skill 取数时可选
-# panda-data>=0.0.9
+# panda-data==1.0.6
