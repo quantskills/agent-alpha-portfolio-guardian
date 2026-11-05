@@ -206,3 +206,7 @@ Maintained by `frocir` as a QuantSkills community project.
 
 本报告与仓库材料基于规则化分析与依赖 Skill 证据生成，仅供研究参考，不构成任何投资建议。  
 Materials in this repository are for research reference only and do not constitute investment advice.
+
+## Pandadata compatibility
+
+[Pandadata 1.0.6 compatibility](references/pandadata-compatibility.md) — exact SDK baseline, validation scope, and shared guidance for all supported agent runtimes.
